@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Full App Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+    </style>
+</head>
+<body>
+    <h1>Comprehensive JavaScript Test</h1>
+
+    <div id="results"></div>
+
+    <script>
+        const results = [];
+
+        function addResult(message, type = 'info') {
+            results.push({ message, type });
+            updateDisplay();
+        }
+
+        function updateDisplay() {
+            const container = document.getElementById('results');
+            container.innerHTML = results.map(r =>
+                `<div class="test ${r.type}">${r.message}</div>`
+            ).join('');
+        }
+
+        // Test 1: Basic JavaScript
+        try {
+            const test = 1 + 1;
+            addResult('✅ Basic JavaScript operations work', 'success');
+        } catch (e) {
+            addResult('❌ Basic JavaScript failed: ' + e.message, 'error');
+        }
+
+        // Test 2: Try loading app.js
+        addResult('🔄 Attempting to load app.js...', 'info');
+
+        const script = document.createElement('script');
+        script.src = 'assets/app.js';
+        script.onload = function() {
+            addResult('✅ app.js loaded successfully', 'success');
+
+            // Test 3: Check for functions
+            setTimeout(() => {
+                if (typeof toggleTaskStatus === 'function') {
+                    addResult('✅ toggleTaskStatus function found', 'success');
+                } else {
+                    addResult('❌ toggleTaskStatus function not found', 'error');
+                }
+
+                if (typeof saveTask === 'function') {
+                    addResult('✅ saveTask function found', 'success');
+                } else {
+                    addResult('❌ saveTask function not found', 'error');
+                }
+
+                addResult('🎯 Testing completed! Check results above.', 'info');
+            }, 100);
+        };
+
+        script.onerror = function() {
+            addResult('❌ Failed to load app.js - check file path and syntax', 'error');
+        };
+
+        document.head.appendChild(script);
+
+        addResult('⏳ Tests running... Please wait for results.', 'info');
+    </script>
+</body>
+</html>

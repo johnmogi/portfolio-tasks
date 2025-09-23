@@ -1,0 +1,52 @@
+[
+  {
+    "id": "d4b0a66d-f994-4ce6-9000-b7f1deb6f9ac",
+    "title": "Complete project proposal",
+    "description": "Write and finalize the project proposal document",
+    "category": "Work",
+    "color": "#007bff",
+    "createdAt": 1758612212994,
+    "deadline": 1758698612994,
+    "status": "open"
+  },
+  {
+    "id": "22c3e39d-dc24-47de-8cc4-03f556d86e0c",
+    "title": "Review design mockups",
+    "description": "Review and provide feedback on the latest design mockups",
+    "category": "Design",
+    "color": "#28a745",
+    "createdAt": 1758612212994,
+    "deadline": 1759217012994,
+    "status": "open"
+  },
+  {
+    "id": "14123bf5-8904-41bc-8525-d01cfa82f2ad",
+    "title": "Update portfolio website",
+    "description": "Add new projects and update existing content on portfolio",
+    "category": "Personal",
+    "color": "#dc3545",
+    "createdAt": 1758525812994,
+    "deadline": 1759476212994,
+    "status": "open"
+  },
+  {
+    "id": "1da3bbd3-869d-4f22-9fcc-e3fb29dfaf88",
+    "title": "Learn new JavaScript framework",
+    "description": "Study and complete tutorials for the new framework",
+    "category": "Learning",
+    "color": "#ffc107",
+    "createdAt": 1758353012994,
+    "deadline": 1759821812994,
+    "status": "open"
+  },
+  {
+    "id": "4d565bec-a662-4867-98b5-c791eaa32eb0",
+    "title": "Title",
+    "description": "Description",
+    "category": "Category",
+    "color": "#888888",
+    "createdAt": 1758612238291,
+    "deadline": "2025-09-24T10:23",
+    "status": "open"
+  }
+]

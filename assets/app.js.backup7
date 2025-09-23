@@ -1,0 +1,679 @@
+// To-Do Portfolio App
+// Single-page jQuery application with Bootstrap and DataTables
+// All functionality will be implemented in this single file
+
+$(document).ready(function() {
+    console.log('To-Do Portfolio app loaded successfully');
+
+    // ==========================================
+    // DATA MODEL & STORAGE HELPERS
+    // ==========================================
+
+    // Task schema: { id, title, description, category, color, createdAt, deadline, status }
+    const STORAGE_KEY = 'todo_portfolio_tasks_v1';
+
+    // Simple UUID generator
+    function uuid() {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+            const r = Math.random() * 16 | 0;
+            const v = c === 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+        });
+    }
+
+    // Load tasks from localStorage
+    function loadTasks() {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+            return JSON.parse(stored);
+        }
+        return seedTasks();
+    }
+
+    // Save tasks to localStorage
+    function saveTasks(tasks) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+    }
+
+    // Seed data for first run
+    function seedTasks() {
+        const now = Date.now();
+        const tomorrow = now + (24 * 60 * 60 * 1000);
+        const nextWeek = now + (7 * 24 * 60 * 60 * 1000);
+
+        return [
+            {
+                id: uuid(),
+                title: 'Complete project proposal',
+                description: 'Write and finalize the project proposal document',
+                category: 'Work',
+                color: '#007bff',
+                createdAt: now,
+                deadline: tomorrow,
+                status: 'open',
+                estimatedHours: 4,
+                timeSpent: 0,
+                isTracking: false,
+                trackingStartTime: null
+            },
+            {
+                id: uuid(),
+                title: 'Review design mockups',
+                description: 'Review and provide feedback on the latest design mockups',
+                category: 'Design',
+                color: '#28a745',
+                createdAt: now,
+                deadline: nextWeek,
+                status: 'open',
+                estimatedHours: 2,
+                timeSpent: 0,
+                isTracking: false,
+                trackingStartTime: null
+            },
+            {
+                id: uuid(),
+                title: 'Team meeting preparation',
+                description: 'Prepare agenda and materials for the upcoming team meeting',
+                category: 'Work',
+                color: '#007bff',
+                createdAt: now - (2 * 60 * 60 * 1000),
+                deadline: null,
+                status: 'done',
+                estimatedHours: 1,
+                timeSpent: 45,
+                isTracking: false,
+                trackingStartTime: null
+            },
+            {
+                id: uuid(),
+                title: 'Update portfolio website',
+                description: 'Add new projects and update existing content on portfolio',
+                category: 'Personal',
+                color: '#dc3545',
+                createdAt: now - (24 * 60 * 60 * 1000),
+                deadline: nextWeek + (3 * 24 * 60 * 60 * 1000),
+                status: 'open',
+                estimatedHours: 8,
+                timeSpent: 120,
+                isTracking: false,
+                trackingStartTime: null
+            },
+            {
+                id: uuid(),
+                title: 'Learn new JavaScript framework',
+                description: 'Study and complete tutorials for the new framework',
+                category: 'Learning',
+                color: '#ffc107',
+                createdAt: now - (3 * 24 * 60 * 60 * 1000),
+                deadline: nextWeek + (7 * 24 * 60 * 60 * 1000),
+                status: 'open',
+                estimatedHours: 16,
+                timeSpent: 0,
+                isTracking: false,
+                trackingStartTime: null
+            }
+        ];
+    }
+
+    // ==========================================
+    // FORMATTING HELPERS
+    // ==========================================
+
+    // Format date for display
+    function formatDate(dateString) {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        return date.toLocaleString();
+    }
+
+    // Create category badge with colored dot
+    function createCategoryBadge(category, color) {
+        if (!category) return '';
+        return `<span class="category-badge">
+            <span class="category-dot" style="background-color: ${color || '#888888'}"></span>
+            ${category}
+        </span>`;
+    }
+
+    // ==========================================
+    // GLOBAL VARIABLES
+    // ==========================================
+
+    let tasks = loadTasks();
+    let tasksTable = null;
+
+    console.log('Loaded tasks:', tasks);
+
+    // ==========================================
+    // DATATABLE INITIALIZATION (Phase 2)
+    // ==========================================
+
+    // Initialize DataTable
+    tasksTable = $('#tasksTable').DataTable({
+        data: tasks,
+        columns: [
+            {
+                data: 'status',
+                title: 'Status',
+                width: '80px',
+                orderable: false,
+                render: function(data, type, row) {
+                    if (type === 'display') {
+                        const checked = data === 'done' ? 'checked' : '';
+                        return `<div class="form-check">
+                            <input class="form-check-input task-status" type="checkbox" ${checked}
+                                   data-task-id="${row.id}">
+                        </div>`;
+                    }
+                    return data;
+                }
+            },
+            {
+                data: 'title',
+                title: 'Title',
+                render: function(data, type, row) {
+                    if (type === 'display') {
+                        const isDone = row.status === 'done' ? 'is-done' : '';
+                        return `<span class="${isDone}" title="${row.description || ''}">${data}</span>`;
+                    }
+                    return data;
+                }
+            },
+            {
+                data: 'category',
+                title: 'Category',
+                render: function(data, type, row) {
+                    if (type === 'display') {
+                        return createCategoryBadge(data, row.color);
+                    }
+                    return data || '';
+                }
+            },
+            {
+                data: 'deadline',
+                title: 'Deadline',
+                render: function(data, type, row) {
+                    if (type === 'display') {
+                        const formatted = formatDate(data);
+                        const isOverdue = data && new Date(data) < new Date() && row.status === 'open';
+                        const overdueClass = isOverdue ? 'overdue' : '';
+                        return `<span class="${overdueClass}" title="${isOverdue ? 'Overdue' : ''}">${formatted}</span>`;
+                    }
+                    if (type === 'sort') {
+                        return data ? new Date(data).getTime() : 0;
+                    }
+                    return data;
+                }
+            },
+            {
+                data: 'createdAt',
+                title: 'Created',
+                render: function(data, type, row) {
+                    if (type === 'display') {
+                        return formatDate(data);
+                    }
+                    if (type === 'sort') {
+                        return new Date(data).getTime();
+                    }
+                    return data;
+                }
+            },
+            {
+                data: null,
+                title: 'Actions',
+                width: '120px',
+                orderable: false,
+                render: function(data, type, row) {
+                    if (type === 'display') {
+                        return `
+                            <button class="btn btn-sm btn-outline-primary edit-task" data-task-id="${row.id}">
+                                Edit
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger delete-task" data-task-id="${row.id}">
+                                Delete
+                            </button>
+                        `;
+                    }
+                    return '';
+                }
+            }
+        ],
+        order: [[3, 'asc']], // Sort by deadline ascending (column index 3)
+        pageLength: 25,
+        responsive: true,
+        rowGroup: {
+            dataSrc: 'category',
+            startRender: function(rows, group) {
+                if (!group) return null; // Handle empty categories
+                return $('<tr class="table-info">')
+                    .append('<td colspan="6"><strong>' + group + '</strong></td>')
+                    .get(0);
+            }
+        }
+    });
+
+    // ==========================================
+    // EVENT HANDLERS
+    // ==========================================
+
+    // Add Task button
+    $('#addTaskBtn').on('click', function() {
+        openTaskModal();
+    });
+
+    // Edit Task buttons
+    $('#tasksTable').on('click', '.edit-task', function() {
+        const taskId = $(this).data('task-id');
+        const task = tasks.find(t => t.id === taskId);
+        if (task) {
+            openTaskModal(task);
+        }
+    });
+
+    // Delete Task buttons (will be implemented in Phase 4)
+    $('#tasksTable').on('click', '.delete-task', function() {
+        const taskId = $(this).data('task-id');
+        deleteTask(taskId);
+    });
+
+    // Status checkbox toggle (will be implemented in Phase 4)
+    $('#tasksTable').on('change', '.task-status', function() {
+        const taskId = $(this).data('task-id');
+        const isChecked = $(this).is(':checked');
+        toggleTaskStatus(taskId, isChecked);
+    });
+
+    // Modal form submission
+    $('#taskForm').on('submit', function(e) {
+        e.preventDefault();
+        saveTask();
+    });
+
+    // ==========================================
+    // MODAL FUNCTIONS (Phase 3)
+    // ==========================================
+
+    function openTaskModal(task = null) {
+        const modal = $('#taskModal');
+        const form = $('#taskForm');
+
+        if (task) {
+            // Edit mode
+            $('#taskModalLabel').text('Edit Task');
+            $('#taskId').val(task.id);
+            $('#taskTitle').val(task.title);
+            $('#taskDescription').val(task.description);
+            $('#taskCategory').val(task.category);
+            $('#taskColor').val(task.color);
+            $('#taskDeadline').val(task.deadline ? new Date(task.deadline).toISOString().slice(0, 16) : '');
+            $('#taskEstimatedHours').val(task.estimatedHours || '');
+            $('#taskTimeSpentDisplay').text(formatTimeSpent(task.timeSpent || 0));
+        } else {
+            // Add mode
+            $('#taskModalLabel').text('Add Task');
+            form[0].reset();
+            $('#taskId').val('');
+            $('#taskColor').val('#888888'); // Default color
+            $('#taskTimeSpentDisplay').text('0h 0m');
+        }
+
+        // Focus first input
+        setTimeout(() => {
+            $('#taskTitle').focus();
+        }, 500);
+
+        modal.modal('show');
+    }
+
+    function saveTask() {
+        const form = $('#taskForm');
+        const taskId = $('#taskId').val();
+        const title = $('#taskTitle').val().trim();
+        const description = $('#taskDescription').val().trim();
+        const category = $('#taskCategory').val().trim();
+        const color = $('#taskColor').val();
+        const deadline = $('#taskDeadline').val();
+        const estimatedHours = parseFloat($('#taskEstimatedHours').val()) || 0;
+
+        // Validation
+        if (!title) {
+            alert('Title is required');
+            $('#taskTitle').focus();
+            return;
+        }
+
+        // Validate deadline if provided
+        if (deadline && !isValidDate(deadline)) {
+            alert('Please enter a valid deadline');
+            $('#taskDeadline').focus();
+            return;
+        }
+
+        const now = Date.now();
+        let task;
+
+        if (taskId) {
+            // Update existing task
+            task = tasks.find(t => t.id === taskId);
+            if (task) {
+                task.title = title;
+                task.description = description;
+                task.category = category;
+                task.color = color;
+                task.deadline = deadline || null;
+                task.estimatedHours = estimatedHours;
+                // Don't update createdAt, status, or timeSpent here
+            }
+        } else {
+            // Create new task
+            task = {
+                id: uuid(),
+                title: title,
+                description: description,
+                category: category,
+                color: color,
+                createdAt: now,
+                deadline: deadline || null,
+                status: 'open',
+                estimatedHours: estimatedHours,
+                timeSpent: 0,
+                isTracking: false,
+                trackingStartTime: null
+            };
+            tasks.push(task);
+        }
+
+        // Save to localStorage
+        saveTasks(tasks);
+
+        // Close modal
+        $('#taskModal').modal('hide');
+
+        // Refresh current view
+        refreshCurrentView();
+
+        // Show success message
+        showToast(taskId ? 'Task updated successfully!' : 'Task created successfully!', 'success');
+    }
+
+    function isValidDate(dateString) {
+        const date = new Date(dateString);
+        return date instanceof Date && !isNaN(date);
+    }
+
+    function showToast(message, type = 'success') {
+        // Remove existing toasts
+        $('.toast-container').remove();
+
+        // Create toast container
+        const toastContainer = $(`
+            <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 9999;">
+                <div class="toast show" role="alert" aria-live="assertive" aria-atomic="true">
+                    <div class="toast-header">
+                        <strong class="me-auto">Notification</strong>
+                        <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+                    </div>
+                    <div class="toast-body">
+                        ${message}
+                    </div>
+                </div>
+            </div>
+        `);
+
+        // Set toast color based on type
+        const toastEl = toastContainer.find('.toast');
+        toastEl.addClass(`text-bg-${type}`);
+
+        // Add to page
+        $('body').append(toastContainer);
+
+        // Auto-hide after 3 seconds
+        setTimeout(() => {
+            toastEl.fadeOut(() => {
+                toastContainer.remove();
+            });
+        }, 3000);
+    }
+
+    // ==========================================
+    // TABLE REFRESH FUNCTION
+    // ==========================================
+
+    function refreshTable() {
+        tasksTable.clear();
+        tasksTable.rows.add(tasks);
+        tasksTable.draw();
+        updateCategoryFilter();
+
+        // Show empty state message if no tasks
+        if (tasks.length === 0) {
+            $('#tasksTable').find('tbody').html(`
+                <tr>
+                    <td colspan="6" class="text-center text-muted py-4">
+                        <div>
+                            <i class="fas fa-tasks" style="font-size: 3rem; opacity: 0.3;"></i>
+                            <p class="mt-2">No tasks yet. Click "Add Task" to get started!</p>
+                        </div>
+                    </td>
+                </tr>
+            `);
+        }
+    }
+
+    // ==========================================
+    // CATEGORY FILTER (Phase 5)
+    // ==========================================
+
+    function updateCategoryFilter() {
+        const categories = [...new Set(tasks.map(t => t.category).filter(Boolean))].sort();
+        const filterSelect = $('#categoryFilter');
+
+        // Clear existing options except "All"
+        filterSelect.find('option:not(:first)').remove();
+
+        // Add categories
+        categories.forEach(category => {
+            filterSelect.append(`<option value="${category}">${category}</option>`);
+        });
+    // Category filter change handler
+    $('#categoryFilter').on('change', function() {
+        const selectedCategory = $(this).val();
+        tasksTable.column(2).search(selectedCategory || '').draw();
+    });
+
+    // Group by Category checkbox handler
+    $('#groupByCategory').on('change', function() {
+        const isChecked = $(this).is(':checked');
+
+        if (isChecked) {
+            // Enable row grouping
+            tasksTable.rowGroup().enable().draw();
+        } else {
+            // Disable row grouping
+            tasksTable.rowGroup().disable().draw();
+        }
+    });
+
+    // ==========================================
+    // IMPORT/EXPORT FUNCTIONALITY (Phase 7)
+    // ==========================================
+
+    // Export button handler
+    $('#exportBtn').on('click', function() {
+        exportTasks();
+    });
+
+    // Import button handler
+    $('#importBtn').on('click', function() {
+        importTasks();
+    });
+
+    function exportTasks() {
+        const dataStr = JSON.stringify(tasks, null, 2);
+        const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+
+        const exportFileDefaultName = `todo-portfolio-${new Date().toISOString().split('T')[0]}.json`;
+
+        const linkElement = document.createElement('a');
+        linkElement.setAttribute('href', dataUri);
+        linkElement.setAttribute('download', exportFileDefaultName);
+        linkElement.click();
+
+        showToast('Tasks exported successfully!', 'success');
+    }
+
+    function importTasks() {
+        // Create import modal
+        const importModal = $(`
+            <div class="modal fade" id="importModal" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Import Tasks</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="alert alert-warning">
+                                <strong>Warning:</strong> This will replace all current tasks. Make sure you have exported your current data first.
+                            </div>
+                            <div class="mb-3">
+                                <label for="importData" class="form-label">Paste JSON data:</label>
+                                <textarea class="form-control" id="importData" rows="10" placeholder="Paste your exported JSON data here..."></textarea>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="button" class="btn btn-danger" id="confirmImport">Import & Replace</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `);
+
+        $('body').append(importModal);
+
+        // Confirm import handler
+        $('#confirmImport').on('click', function() {
+            const importData = $('#importData').val().trim();
+
+            if (!importData) {
+                alert('Please paste JSON data to import');
+                return;
+            }
+
+            try {
+                const parsedTasks = JSON.parse(importData);
+
+                if (!Array.isArray(parsedTasks)) {
+                    throw new Error('Invalid JSON format');
+                }
+
+                // Validate task structure
+                const isValid = parsedTasks.every(task =>
+                    task.id && task.title && task.status &&
+                    ['open', 'done'].includes(task.status)
+                );
+
+                if (!isValid) {
+                    throw new Error('Invalid task data structure');
+                }
+
+                if (confirm(`This will replace all ${tasks.length} current tasks with ${parsedTasks.length} imported tasks. Continue?`)) {
+                    tasks = parsedTasks;
+                    saveTasks(tasks);
+                    refreshTable();
+                    importModal.modal('hide');
+                    showToast(`Successfully imported ${tasks.length} tasks!`, 'success');
+                }
+            } catch (error) {
+                alert('Invalid JSON data: ' + error.message);
+            }
+        });
+
+        importModal.modal('show');
+
+        // Clean up modal when hidden
+        importModal.on('hidden.bs.modal', function() {
+            importModal.remove();
+        });
+    }
+
+    // ==========================================
+    // PLACEHOLDER FUNCTIONS (will be implemented in later phases)
+    // ==========================================
+
+    function deleteTask(taskId) {
+        const task = tasks.find(t => t.id === taskId);
+        if (!task) return;
+
+        if (confirm(`Are you sure you want to delete "${task.title}"?`)) {
+            // Remove from array
+            tasks = tasks.filter(t => t.id !== taskId);
+
+            // Save to localStorage
+            saveTasks(tasks);
+
+            // Refresh table
+            refreshTable();
+
+            // Show success message
+            showToast('Task deleted successfully!');
+        }
+    }
+
+    function toggleTaskStatus(taskId, isDone) {
+        const task = tasks.find(t => t.id === taskId);
+        if (!task) return;
+
+        // Toggle status
+        task.status = isDone ? 'done' : 'open';
+
+        // Save to localStorage
+        saveTasks(tasks);
+
+        // Refresh table to update styling
+        refreshTable();
+
+        // Show success message
+        showToast(`Task marked as ${task.status === 'done' ? 'completed' : 'open'}!`);
+    }
+    // Make functions globally accessible
+    window.toggleTaskStatus = toggleTaskStatus;
+    window.saveTask = saveTask;
+    window.deleteTask = deleteTask;
+    window.refreshTable = refreshTable;
+    window.refreshCurrentView = refreshCurrentView;
+    window.toggleTimer = toggleTimer;
+    window.resetTimer = resetTimer;
+    // Timer functions
+    function toggleTimer(taskId) {
+        const task = tasks.find(t => t.id === taskId);
+        if (!task) return;
+        
+        if (task.isTracking) {
+            const now = Date.now();
+            const elapsed = (now - task.trackingStartTime) / (1000 * 60);
+            task.timeSpent = (task.timeSpent || 0) + elapsed;
+            task.isTracking = false;
+            task.trackingStartTime = null;
+        } else {
+            task.isTracking = true;
+            task.trackingStartTime = Date.now();
+        }
+        
+        saveTasks(tasks);
+        refreshCurrentView();
+    }
+    
+    function resetTimer(taskId) {
+        const task = tasks.find(t => t.id === taskId);
+        if (!task) return;
+        
+        task.timeSpent = 0;
+        task.isTracking = false;
+        task.trackingStartTime = null;
+        
+        saveTasks(tasks);
+        refreshCurrentView();
+    }
+});

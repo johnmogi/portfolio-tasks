@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JS Test</title>
+</head>
+<body>
+    <h1>Testing app.js syntax</h1>
+    <div id="result"></div>
+
+    <script>
+        // Simple test - create a function and test it
+        function testFunction() {
+            return 'success';
+        }
+
+        // Test basic syntax
+        try {
+            document.getElementById('result').innerHTML = '<p style="color: green;">✅ Basic JavaScript works!</p>';
+        } catch (error) {
+            document.getElementById('result').innerHTML = '<p style="color: red;">❌ Basic JS Error: ' + error.message + '</p>';
+        }
+    </script>
+</body>
+</html>
