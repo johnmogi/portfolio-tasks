@@ -282,20 +282,35 @@ $(document).ready(function() {
 
     function updateModalTimerControls() {
         const taskId = $('#taskId').val();
-        if (!taskId) return;
-
-        const task = tasks.find(t => t.id === taskId);
-        if (!task) return;
+        const hasTask = taskId && tasks.find(t => t.id === taskId);
 
         const startBtn = $('#modalStartTimer');
         const stopBtn = $('#modalStopTimer');
+        const resetBtn = $('#modalResetTimer');
         const liveDisplay = $('#taskLiveTimerDisplay');
 
-        if (task.isTracking) {
-            startBtn.hide();
-            stopBtn.show();
-            liveDisplay.show();
+        if (taskId && hasTask) {
+            // Enable buttons for saved tasks
+            startBtn.prop('disabled', false);
+            stopBtn.prop('disabled', false);
+            resetBtn.prop('disabled', false);
+
+            const task = tasks.find(t => t.id === taskId);
+            if (task.isTracking) {
+                startBtn.hide();
+                stopBtn.show();
+                liveDisplay.show();
+            } else {
+                startBtn.show();
+                stopBtn.hide();
+                liveDisplay.hide();
+            }
         } else {
+            // Disable buttons for unsaved tasks
+            startBtn.prop('disabled', true);
+            stopBtn.prop('disabled', true);
+            resetBtn.prop('disabled', true);
+
             startBtn.show();
             stopBtn.hide();
             liveDisplay.hide();
@@ -304,26 +319,53 @@ $(document).ready(function() {
 
     function startTimerFromModal() {
         const taskId = $('#taskId').val();
-        if (taskId) {
-            toggleTimer(taskId);
-            updateModalTimerControls();
+        if (!taskId) {
+            showToast('Please save the task first before starting the timer', 'warning');
+            return;
         }
+
+        const task = tasks.find(t => t.id === taskId);
+        if (!task) {
+            showToast('Task not found. Please save the task first.', 'error');
+            return;
+        }
+
+        toggleTimer(taskId);
+        updateModalTimerControls();
     }
 
     function stopTimerFromModal() {
         const taskId = $('#taskId').val();
-        if (taskId) {
-            toggleTimer(taskId);
-            updateModalTimerControls();
+        if (!taskId) {
+            showToast('Please save the task first before stopping the timer', 'warning');
+            return;
         }
+
+        const task = tasks.find(t => t.id === taskId);
+        if (!task) {
+            showToast('Task not found. Please save the task first.', 'error');
+            return;
+        }
+
+        toggleTimer(taskId);
+        updateModalTimerControls();
     }
 
     function resetTimerFromModal() {
         const taskId = $('#taskId').val();
-        if (taskId) {
-            resetTimer(taskId);
-            updateModalTimerControls();
+        if (!taskId) {
+            showToast('Please save the task first before resetting the timer', 'warning');
+            return;
         }
+
+        const task = tasks.find(t => t.id === taskId);
+        if (!task) {
+            showToast('Task not found. Please save the task first.', 'error');
+            return;
+        }
+
+        resetTimer(taskId);
+        updateModalTimerControls();
     }
 
     function getFormData() {
@@ -566,27 +608,6 @@ $(document).ready(function() {
                         </div>
                         <span class="task-card-meta text-sm">${formatDate(task.deadline) || 'No deadline'}</span>
                     </div>
-
-                    ${timeSpent > 0 || isTracking ? `
-                        <div class="time-tracker">
-                            <div class="time-display">
-                                <i class="fas fa-stopwatch"></i>
-                                <span>Time: ${formatTimeSpent(timeSpent)}</span>
-                                ${isTracking ? '<span class="text-red-500 ml-2">🔴</span>' : ''}
-                            </div>
-                            <div class="flex space-x-1">
-                                <button class="timer-btn start ${isTracking ? 'stop' : 'start'}"
-                                        onclick="event.stopPropagation(); toggleTimer('${task.id}')">
-                                    ${isTracking ? '<i class="fas fa-stop"></i>' : '<i class="fas fa-play"></i>'}
-                                </button>
-                                <button class="timer-btn reset"
-                                        onclick="event.stopPropagation(); resetTimer('${task.id}')"
-                                        title="Reset timer">
-                                    <i class="fas fa-undo"></i>
-                                </button>
-                            </div>
-                        </div>
-                    ` : ''}
 
                     <div class="time-tracker" ${timeSpent > 0 || isTracking ? '' : 'style="opacity: 0.7;"'}>
                         <div class="time-display">
