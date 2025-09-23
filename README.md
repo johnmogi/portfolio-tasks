@@ -23,43 +23,33 @@ assets/
 ### 1. Main Entry Point (`app-new.js`)
 - Application initialization
 - Global event handlers
-- Module coordination
-- Utility functions
-
-### 2. Data Manager (`modules/data-manager.js`)
-- Task CRUD operations
-- Local storage management
-- Data validation
-- Seed data generation
-
-### 3. View Manager (`modules/view-manager.js`)
-- DataTable initialization
-- View rendering (table, card, list)
-- View switching logic
-- Template generation
-
-### 4. UI Manager (`modules/ui-manager.js`)
-- Modal operations
-- Form handling
-- User interactions
-- Export/import functionality
-
-### 5. Utils (`modules/utils.js`)
-- Formatting functions
-- Validation helpers
-- Array utilities
-- Color utilities
-- Debounce/throttle functions
 
 ## 🚀 Features
 
-- **Multiple Views**: Table, Card, and List views
+### 📋 **Core Features**
+- **Multiple Views**: Table, Card, and List views (Cards default)
 - **Data Persistence**: Local storage with automatic saving
 - **Export/Import**: JSON-based task backup and restore
 - **Responsive Design**: Mobile-friendly interface
-- **Time Tracking**: Built-in time tracking functionality
-- **Category Management**: Color-coded task categories
-- **Search & Filter**: Advanced filtering options
+
+### 🆕 **New Features**
+- **🎯 Smart Category Filtering**: Dropdown populated from your tasks
+- **⏱️ Background Time Tracking**: Start timer and close modal - tracking continues!
+- **🌙 Dark Mode**: Toggle with navbar button, persists across sessions
+- **📱 Enhanced Mobile Support**: Better responsive design
+
+### ⚡ **Time Tracking**
+- Start timer on any task
+- Timer runs in background even when modal is closed
+- Automatic saving every minute
+- Reset timer functionality
+- Visual time display in all views
+
+### 🎨 **Theme Support**
+- Light mode (default)
+- Dark mode with complete styling
+- Smooth transitions
+- All components themed (tables, cards, modals, forms)
 
 ## 🛠️ Development
 
@@ -72,78 +62,91 @@ python -m http.server 8080
 npx serve .
 ```
 
-### Testing
-Open `http://localhost:8080` in your browser to test the application.
-
 ### Browser Support
 - Modern browsers (Chrome, Firefox, Safari, Edge)
 - Requires ES6 module support for the new modular version
 
-## 🔧 Configuration
-
-The application uses the following key:
-- `todo_portfolio_tasks_v1` - Local storage key for tasks
-- Default view: Table view
-- Page length: 25 tasks per page
-
 ## 📝 Usage
 
-1. **Add Tasks**: Click "Add Task" button to create new tasks
-2. **Edit Tasks**: Click "Edit" button on any task
-3. **Delete Tasks**: Click "Delete" button and confirm
-4. **Mark Complete**: Check/uncheck the status checkbox
-5. **Switch Views**: Use the view toggle buttons (Table/Cards/List)
-6. **Export/Import**: Use the export/import buttons for data backup
+### 🔍 **Category Filtering**
+1. The category dropdown automatically populates with your task categories
+2. Select "All Categories" to show all tasks
+3. Choose a specific category to filter tasks
+4. Works with all view modes (Table, Cards, List)
+
+### ⏱️ **Time Tracking**
+1. Click the "Start" button on any task to begin tracking
+2. Timer continues running even when you close the task modal
+3. Time is automatically saved every minute
+4. Click "Stop" to pause tracking
+5. Use "Reset" to clear recorded time
+
+### 🌙 **Dark Mode**
+1. Click the "🌙 Dark Mode" button in the navbar
+2. Toggle between light and dark themes
+3. Your preference is saved and persists across sessions
+4. All UI elements are properly themed
+
+### 📋 **Default View**
+- Cards view is now the default (most user-friendly)
+- Use view toggle buttons to switch between Table/Cards/List
+- Your view preference is remembered
 
 ## 🎨 Customization
 
 ### Adding New Categories
-Edit the seed data in `data-manager.js` to add new default categories with colors.
+Edit the seed data in `app-enhanced.js` to add new default categories with colors.
 
-### Styling
-Modify `styles.css` to customize the appearance:
-- Task card styles
-- View switching animations
-- Responsive breakpoints
-- Color schemes
+### Dark Mode Customization
+Modify the dark mode CSS in `styles.css`:
+- `.dark-mode` class controls all dark theme styles
+- Customize colors, backgrounds, and transitions
+- Add new themed components as needed
 
-### Adding New Views
-1. Add new view type to the view manager
-2. Create rendering method
-3. Add HTML container
-4. Update view switching logic
+### Time Tracking
+- Timer interval is set to 1 minute (line 152 in app-enhanced.js)
+- Modify `startBackgroundTimer()` function for different intervals
+- Customize time display format in `formatTimeSpent()`
 
 ## 🐛 Troubleshooting
 
 ### Common Issues
-1. **Module loading errors**: Ensure all module files are in the correct location
-2. **CORS issues**: Use a local server instead of opening directly in browser
-3. **Data not persisting**: Check browser's localStorage settings
+1. **Timer not working**: Check browser console for errors
+2. **Dark mode not applying**: Clear localStorage and refresh
+3. **Categories not showing**: Add tasks with categories first
+4. **Data not persisting**: Check browser's localStorage settings
 
 ### Debug Mode
 The application logs to console. Check browser developer tools for debugging information.
 
-## 🔄 Migration from Legacy Version
+## 🔄 Migration from Previous Versions
 
-The new modular version (`app-new.js`) is designed to be a drop-in replacement for the legacy `app.js`. Simply update the HTML script reference to use the new file.
+The enhanced version (`app-enhanced.js`) is designed to be a drop-in replacement for previous versions. All existing functionality is preserved and enhanced.
 
-Legacy features maintained:
-- All existing functionality
-- Data compatibility
-- UI consistency
-- Export/import format
+### What's New:
+- ✅ Category filtering dropdown
+- ✅ Background time tracking
+- ✅ Dark mode support
+- ✅ Cards as default view
+- ✅ Enhanced error handling
+- ✅ Better mobile responsiveness
 
 ## 📈 Future Enhancements
 
 - [ ] User authentication
 - [ ] Cloud synchronization
-- [ ] Advanced filtering
+- [ ] Advanced filtering with date ranges
 - [ ] Task templates
 - [ ] Team collaboration
 - [ ] Mobile app version
-- [ ] Dark mode support
+- [ ] Task dependencies
+- [ ] Priority levels
+- [ ] Subtasks support
+- [ ] Calendar integration
 
 ---
 
 Built with ❤️ using modern web technologies
+
+**✨ Latest Update: Enhanced with category filtering, background time tracking, and dark mode support!**
 # portfolio-tasks

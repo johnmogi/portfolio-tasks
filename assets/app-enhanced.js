@@ -1,17 +1,25 @@
 /**
- * To-Do Portfolio App - Fallback Version (No ES6 Modules)
- * Compatible with file:// protocol for direct browser opening
+ * To-Do Portfolio App - Enhanced Version with New Features
+ * Features: Category filtering, background time tracking, cards default, dark mode
  */
 
 $(document).ready(function() {
-    console.log('🚀 To-Do Portfolio app starting (Fallback version)...');
+    console.log('🚀 Enhanced To-Do Portfolio app starting...');
 
     // ==========================================
-    // DATA MANAGEMENT (Embedded)
+    // GLOBAL VARIABLES
     // ==========================================
 
     const STORAGE_KEY = 'todo_portfolio_tasks_v1';
     let tasks = [];
+    let currentView = 'card'; // Cards as default view
+    let tasksTable = null;
+    let activeTimer = null;
+    let darkMode = localStorage.getItem('darkMode') === 'true';
+
+    // ==========================================
+    // DATA MANAGEMENT
+    // ==========================================
 
     function loadTasks() {
         try {
@@ -92,44 +100,136 @@ $(document).ready(function() {
                 timeSpent: 45,
                 isTracking: false,
                 trackingStartTime: null
-            },
-            {
-                id: generateId(),
-                title: 'Update portfolio website',
-                description: 'Add new projects and update existing content on portfolio',
-                category: 'Personal',
-                color: '#dc3545',
-                createdAt: now - (24 * 60 * 60 * 1000),
-                deadline: nextWeek + (3 * 24 * 60 * 60 * 1000),
-                status: 'open',
-                estimatedHours: 8,
-                timeSpent: 120,
-                isTracking: false,
-                trackingStartTime: null
-            },
-            {
-                id: generateId(),
-                title: 'Learn new JavaScript framework',
-                description: 'Study and complete tutorials for the new framework',
-                category: 'Learning',
-                color: '#ffc107',
-                createdAt: now - (3 * 24 * 60 * 60 * 1000),
-                deadline: nextWeek + (7 * 24 * 60 * 60 * 1000),
-                status: 'open',
-                estimatedHours: 16,
-                timeSpent: 0,
-                isTracking: false,
-                trackingStartTime: null
             }
         ];
     }
 
     // ==========================================
-    // VIEW MANAGEMENT (Embedded)
+    // CATEGORY FILTERING
     // ==========================================
 
-    let currentView = 'table';
-    let tasksTable = null;
+    function getUniqueCategories() {
+        const categories = new Set(tasks.map(task => task.category).filter(Boolean));
+        return Array.from(categories).sort();
+    }
+
+    function populateCategoryFilter() {
+        const categories = getUniqueCategories();
+        const select = $('#categoryFilter');
+
+        // Clear existing options (except "All Categories")
+        select.find('option:not(:first)').remove();
+
+        // Add categories
+        categories.forEach(category => {
+            select.append(`<option value="${category}">${category}</option>`);
+        });
+    }
+
+    function filterTasksByCategory(category) {
+        if (!category) {
+            return tasks;
+        }
+        return tasks.filter(task => task.category === category);
+    }
+
+    // ==========================================
+    // BACKGROUND TIME TRACKING
+    // ==========================================
+
+    function startBackgroundTimer() {
+        // Check every minute for active timers
+        setInterval(() => {
+            const now = Date.now();
+            let hasActiveTimer = false;
+
+            tasks.forEach(task => {
+                if (task.isTracking && task.trackingStartTime) {
+                    const elapsed = Math.floor((now - task.trackingStartTime) / 1000 / 60); // minutes
+                    task.timeSpent = (task.timeSpent || 0) + elapsed;
+                    task.trackingStartTime = now - 1000; // Update to current time minus 1 second
+                    hasActiveTimer = true;
+                }
+            });
+
+            if (hasActiveTimer) {
+                saveTasks();
+                refreshCurrentView();
+            }
+        }, 60000); // Check every minute
+    }
+
+    function toggleTimer(taskId) {
+        const task = tasks.find(t => t.id === taskId);
+        if (!task) return;
+
+        if (task.isTracking) {
+            // Stop timer
+            const now = Date.now();
+            const elapsed = Math.floor((now - task.trackingStartTime) / 1000 / 60);
+            task.timeSpent = (task.timeSpent || 0) + elapsed;
+            task.isTracking = false;
+            task.trackingStartTime = null;
+            showToast('Timer stopped', 'info');
+        } else {
+            // Start timer
+            const now = Date.now();
+            task.isTracking = true;
+            task.trackingStartTime = now - 1000; // Start from current time minus 1 second
+            showToast('Timer started', 'success');
+        }
+
+        saveTasks();
+        refreshCurrentView();
+    }
+
+    function resetTimer(taskId) {
+        const task = tasks.find(t => t.id === taskId);
+        if (!task) return;
+
+        if (confirm('Are you sure you want to reset the timer? This cannot be undone.')) {
+            task.timeSpent = 0;
+            if (task.isTracking) {
+                task.isTracking = false;
+                task.trackingStartTime = null;
+            }
+            saveTasks();
+            refreshCurrentView();
+            showToast('Timer reset', 'info');
+        }
+    }
+
+    // ==========================================
+    // DARK MODE SUPPORT
+    // ==========================================
+
+    function toggleDarkMode() {
+        darkMode = !darkMode;
+        localStorage.setItem('darkMode', darkMode);
+        applyDarkMode();
+        showToast(`Dark mode ${darkMode ? 'enabled' : 'disabled'}`, 'info');
+    }
+
+    function applyDarkMode() {
+        if (darkMode) {
+            $('body').addClass('dark-mode');
+            $('.navbar').removeClass('bg-primary').addClass('bg-dark');
+            $('.btn-primary').removeClass('btn-primary').addClass('btn-secondary');
+        } else {
+            $('body').removeClass('dark-mode');
+            $('.navbar').removeClass('bg-dark').addClass('bg-primary');
+            $('.btn-secondary').removeClass('btn-secondary').addClass('btn-primary');
+        }
+
+        // Update toggle button
+        const icon = darkMode ? '☀️' : '🌙';
+        const text = darkMode ? 'Light Mode' : 'Dark Mode';
+        $('#darkModeToggle').html(`${icon} ${text}`);
+    }
+
+    // ==========================================
+    // VIEW MANAGEMENT
+    // ==========================================
 
     function initializeDataTable() {
         if ($('#tasksTable').length && $.fn.DataTable) {
@@ -238,21 +338,23 @@ $(document).ready(function() {
         }
     }
 
-    function refreshTable() {
+    function refreshTable(tasksToShow = null) {
+        const displayTasks = tasksToShow || tasks;
         if (tasksTable) {
             tasksTable.clear();
-            if (tasks.length > 0) {
-                tasksTable.rows.add(tasks);
+            if (displayTasks.length > 0) {
+                tasksTable.rows.add(displayTasks);
             }
             tasksTable.draw();
         }
     }
 
-    function renderCardView() {
+    function renderCardView(tasksToShow = null) {
+        const displayTasks = tasksToShow || tasks;
         const container = $('#tasksCardGrid');
         container.empty();
 
-        if (tasks.length === 0) {
+        if (displayTasks.length === 0) {
             container.html(`
                 <div class="col-12">
                     <div class="text-center text-muted py-5">
@@ -264,16 +366,17 @@ $(document).ready(function() {
             return;
         }
 
-        tasks.forEach(task => {
+        displayTasks.forEach(task => {
             container.append(createTaskCard(task));
         });
     }
 
-    function renderListView() {
+    function renderListView(tasksToShow = null) {
+        const displayTasks = tasksToShow || tasks;
         const container = $('#tasksList');
         container.empty();
 
-        if (tasks.length === 0) {
+        if (displayTasks.length === 0) {
             container.html(`
                 <div class="col-12">
                     <div class="text-center text-muted py-5">
@@ -286,14 +389,14 @@ $(document).ready(function() {
         }
 
         const list = $('<ul class="list-group"></ul>');
-        tasks.forEach(task => {
+        displayTasks.forEach(task => {
             list.append(createTaskListItem(task));
         });
         container.append(list);
     }
 
     // ==========================================
-    // UTILITY FUNCTIONS (Embedded)
+    // UTILITY FUNCTIONS
     // ==========================================
 
     function formatDate(dateString) {
@@ -332,6 +435,7 @@ $(document).ready(function() {
                             </span>
                             <small class="text-muted">${formatDate(task.deadline) || 'No deadline'}</small>
                         </div>
+                        ${createTimeTracker(task)}
                     </div>
                 </div>
             </div>
@@ -361,8 +465,34 @@ $(document).ready(function() {
         `;
     }
 
+    function createTimeTracker(task) {
+        const timeSpent = task.timeSpent || 0;
+        const isTracking = task.isTracking || false;
+
+        if (timeSpent > 0 || isTracking) {
+            return `
+                <div class="time-tracker">
+                    <div class="time-display">
+                        <i class="fas fa-stopwatch"></i>
+                        <span>Time: ${formatTimeSpent(timeSpent)}</span>
+                    </div>
+                    <button class="timer-btn ${isTracking ? 'stop' : 'start'}"
+                            onclick="toggleTimer('${task.id}')">
+                        ${isTracking ? 'Stop' : 'Start'}
+                    </button>
+                    <button class="timer-btn reset"
+                            onclick="resetTimer('${task.id}')"
+                            title="Reset timer">
+                        <i class="fas fa-undo"></i>
+                    </button>
+                </div>
+            `;
+        }
+        return '';
+    }
+
     // ==========================================
-    // TASK OPERATIONS (Embedded)
+    // TASK OPERATIONS
     // ==========================================
 
     function addTask(taskData) {
@@ -383,6 +513,7 @@ $(document).ready(function() {
 
         tasks.push(newTask);
         saveTasks();
+        populateCategoryFilter();
         return newTask;
     }
 
@@ -394,6 +525,7 @@ $(document).ready(function() {
 
         tasks[taskIndex] = { ...tasks[taskIndex], ...updates };
         saveTasks();
+        populateCategoryFilter();
         return tasks[taskIndex];
     }
 
@@ -405,6 +537,7 @@ $(document).ready(function() {
 
         const deletedTask = tasks.splice(taskIndex, 1)[0];
         saveTasks();
+        populateCategoryFilter();
         return deletedTask;
     }
 
@@ -420,7 +553,7 @@ $(document).ready(function() {
     }
 
     // ==========================================
-    // UI MANAGEMENT (Embedded)
+    // UI MANAGEMENT
     // ==========================================
 
     function openTaskModal(taskId = null) {
@@ -498,7 +631,6 @@ $(document).ready(function() {
             $('#taskTitle').focus();
             return false;
         }
-
         return true;
     }
 
@@ -507,17 +639,31 @@ $(document).ready(function() {
     // ==========================================
 
     function setupEventHandlers() {
+        // View switching
         $('#tableViewBtn').on('click', () => switchView('table'));
         $('#cardViewBtn').on('click', () => switchView('card'));
         $('#listViewBtn').on('click', () => switchView('list'));
 
+        // Add task
         $('#addTaskBtn').on('click', () => openTaskModal());
 
+        // Category filtering
+        $('#categoryFilter').on('change', function() {
+            const selectedCategory = $(this).val();
+            const filteredTasks = filterTasksByCategory(selectedCategory);
+            refreshCurrentView(filteredTasks);
+        });
+
+        // Dark mode toggle
+        $('#darkModeToggle').on('click', toggleDarkMode);
+
+        // Form submission
         $('#taskForm').on('submit', function(e) {
             e.preventDefault();
             saveTask();
         });
 
+        // Task operations
         $(document).on('click', '.edit-task', function() {
             const taskId = $(this).data('task-id');
             openTaskModal(taskId);
@@ -547,23 +693,25 @@ $(document).ready(function() {
         $('.view-toggle').removeClass('active');
         $(`#${viewType}ViewBtn`).addClass('active');
 
-        $(`.view-container`).removeClass('active');
+        $('.view-container').removeClass('active');
         $(`#tasks${viewType.charAt(0).toUpperCase() + viewType.slice(1)}Container`).addClass('active');
 
         currentView = viewType;
         refreshCurrentView();
     }
 
-    function refreshCurrentView() {
+    function refreshCurrentView(tasksToShow = null) {
+        const displayTasks = tasksToShow || tasks;
+
         switch (currentView) {
             case 'card':
-                renderCardView();
+                renderCardView(displayTasks);
                 break;
             case 'list':
-                renderListView();
+                renderListView(displayTasks);
                 break;
             case 'table':
-                refreshTable();
+                refreshTable(displayTasks);
                 break;
         }
     }
@@ -586,20 +734,27 @@ $(document).ready(function() {
         const toastElement = $('.toast:last')[0];
         const bsToast = new bootstrap.Toast(toastElement);
         bsToast.show();
-    };
-}
 
-function validateFormData(data) {
-    if (!data.title) {
-        showToast('Title is required', 'error');
-        $('#taskTitle').focus();
-        return false;
+        setTimeout(() => $(toastElement).remove(), 5000);
+    };
+
+    // Make timer functions globally accessible
+    window.toggleTimer = toggleTimer;
+    window.resetTimer = resetTimer;
+
+    // ==========================================
+    // INITIALIZATION
+    // ==========================================
+
+    function initialize() {
+        loadTasks();
+        setupEventHandlers();
         initializeDataTable();
         refreshCurrentView();
         populateCategoryFilter();
         applyDarkMode();
         startBackgroundTimer();
-        console.log('✅ Application initialized successfully');
+        console.log('✅ Enhanced Application initialized successfully');
     }
 
     // Start the application

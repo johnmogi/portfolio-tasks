@@ -19,9 +19,14 @@
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <div class="container">
             <span class="navbar-brand mb-0 h1">To-Do Portfolio</span>
-            <button type="button" class="btn btn-outline-light" data-bs-toggle="modal" data-bs-target="#taskModal" id="addTaskBtn">
-                Add Task
-            </button>
+            <div class="d-flex">
+                <button type="button" class="btn btn-outline-light me-2" id="darkModeToggle">
+                    🌙 Dark Mode
+                </button>
+                <button type="button" class="btn btn-outline-light" data-bs-toggle="modal" data-bs-target="#taskModal" id="addTaskBtn">
+                    Add Task
+                </button>
+            </div>
         </div>
     </nav>
 
@@ -178,6 +183,6 @@
     <script src="https://cdn.datatables.net/rowgroup/1.3.1/js/dataTables.rowGroup.min.js"></script>
 
     <!-- App JS -->
-    <script src="assets/app-fallback.js"></script>
+    <script src="assets/app-enhanced.js"></script>
 </body>
 </html>
