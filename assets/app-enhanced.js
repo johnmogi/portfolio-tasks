@@ -23,15 +23,15 @@ $(document).ready(function() {
 
             tasks.forEach(task => {
                 if (task.isTracking && task.trackingStartTime) {
+                    hasActiveTimer = true;
                     const elapsed = Math.floor((now - task.trackingStartTime) / 1000 / 60); // minutes
                     // Only update timeSpent if we have accumulated minutes
                     if (elapsed > 0) {
                         task.timeSpent = (task.timeSpent || 0) + elapsed;
                         task.trackingStartTime = now; // Reset start time to avoid double counting
-                        hasActiveTimer = true;
                     }
 
-                    // Log time every 15 minutes
+                    // Log time every 15 minutes for each active timer
                     const totalElapsed = Math.floor((now - task.trackingStartTime) / 1000 / 60);
                     if (totalElapsed >= 15) {
                         logTime(task.id, 15, 'auto');
@@ -49,8 +49,31 @@ $(document).ready(function() {
 
         // Live timer display update every second
         setInterval(() => {
+            let hasActiveTimers = false;
+            const activeCount = tasks.filter(task => task.isTracking && task.trackingStartTime).length;
+
+            // Update active timer count display
+            const activeCountElement = $('#activeCount');
+            const activeTimersCountElement = $('#activeTimersCount');
+
+            // Update mobile active timer count
+            const mobileActiveCountElement = $('#mobileActiveCount');
+            const mobileActiveTimersCountElement = $('#mobileActiveTimersCount');
+
+            if (activeCount > 0) {
+                activeCountElement.text(activeCount);
+                activeTimersCountElement.show();
+                mobileActiveCountElement.text(activeCount);
+                mobileActiveTimersCountElement.show();
+                hasActiveTimers = true;
+            } else {
+                activeTimersCountElement.hide();
+                mobileActiveTimersCountElement.hide();
+            }
+
             tasks.forEach(task => {
                 if (task.isTracking && task.trackingStartTime) {
+                    hasActiveTimers = true;
                     const elapsedSeconds = Math.floor((Date.now() - task.trackingStartTime) / 1000);
                     const minutes = Math.floor(elapsedSeconds / 60);
                     const seconds = elapsedSeconds % 60;
@@ -60,23 +83,34 @@ $(document).ready(function() {
                         `${minutes}m ${seconds}s` :
                         `${seconds}s`;
 
-                    // Update in all views
-                    $(`.task-card[data-id="${task.id}"] .time-display span`).first().text(`Time: ${timeDisplay}`);
+                    // Update in all views - show both accumulated time and live time
+                    const totalTime = task.timeSpent || 0;
+                    const totalMinutes = Math.floor(totalTime / 60);
+                    const totalSeconds = totalTime % 60;
+
+                    // Format total time
+                    const totalTimeDisplay = totalMinutes > 0 ?
+                        `${totalMinutes}h ${totalSeconds}m` :
+                        `${totalSeconds}m`;
+
+                    // Update card view
+                    $(`.task-card[data-id="${task.id}"] .time-display span`).first().text(`Time: ${totalTimeDisplay} (+${timeDisplay})`);
                     $(`.task-card[data-id="${task.id}"] .time-display .text-red-500`).text('🔴').show();
 
                     // Update list view
-                    $(`.task-list-item[data-id="${task.id}"] .time-display span`).first().text(`Time: ${timeDisplay}`);
+                    $(`.task-list-item[data-id="${task.id}"] .time-display span`).first().text(`Time: ${totalTimeDisplay} (+${timeDisplay})`);
 
                     // Update table view
                     if (tasksTable) {
                         tasksTable.draw(false); // Refresh table to show updated times
                     }
 
-                    // Update modal if open
+                    // Update modal if open and task is selected
                     if ($('#taskModal').is(':visible')) {
                         const taskId = $('#taskId').val();
                         if (taskId === task.id) {
-                            $('#taskLiveTimerDisplay').text(`🔴 Recording (${timeDisplay})`).show();
+                            $('#taskTimeSpentDisplay').text(formatTimeSpent(totalTime));
+                            updateLiveTimerDisplay(taskId);
                         }
                     }
                 } else {
@@ -85,6 +119,12 @@ $(document).ready(function() {
                     $(`.task-list-item[data-id="${task.id}"] .time-display .text-red-500`).hide();
                 }
             });
+
+            // Update background timer only if there are active timers
+            if (hasActiveTimers) {
+                saveTasks();
+                refreshCurrentView();
+            }
         }, 1000); // Update every second for live display
     }
 
@@ -129,12 +169,8 @@ $(document).ready(function() {
 
         const isCurrentlyTracking = task.isTracking;
 
-        // Stop all other timers first
-        tasks.forEach(t => {
-            if (t.isTracking && t.id !== taskId) {
-                stopTimer(t.id);
-            }
-        });
+        // Allow multiple simultaneous timers - no stopping of other timers
+        // Removed: tasks.forEach(t => { if (t.isTracking && t.id !== taskId) stopTimer(t.id); });
 
         if (isCurrentlyTracking) {
             // Stop the timer
@@ -241,6 +277,10 @@ $(document).ready(function() {
         const modal = $('#taskModal');
         const form = $('#taskForm');
 
+        // Clear any existing errors
+        $('.error-message').remove();
+        $('.border-red-500').removeClass('border-red-500');
+
         if (taskId) {
             const task = tasks.find(t => t.id === taskId);
             if (!task) {
@@ -268,16 +308,28 @@ $(document).ready(function() {
         // Update modal timer controls
         updateModalTimerControls();
 
-        // Show modal
+        // Show modal with improved animation
         modal.removeClass('hidden').addClass('flex');
+        modal.hide().fadeIn(200);
         $('body').addClass('overflow-hidden');
+
+        // Focus on title field for better UX
+        setTimeout(() => {
+            $('#taskTitle').focus();
+        }, 100);
     }
 
     function closeTaskModal() {
         const modal = $('#taskModal');
-        modal.removeClass('flex').addClass('hidden');
-        $('body').removeClass('overflow-hidden');
-        $('#taskLiveTimerDisplay').hide(); // Hide live timer when modal closes
+
+        // Hide live timer when modal closes
+        $('#taskLiveTimerDisplay').hide();
+
+        // Close modal with animation
+        modal.fadeOut(200, function() {
+            modal.removeClass('flex').addClass('hidden');
+            $('body').removeClass('overflow-hidden');
+        });
     }
 
     function updateModalTimerControls() {
@@ -300,6 +352,11 @@ $(document).ready(function() {
                 startBtn.hide();
                 stopBtn.show();
                 liveDisplay.show();
+
+                // Update live timer display every second when visible
+                if (!$('#taskModal').is(':visible')) {
+                    updateLiveTimerDisplay(taskId);
+                }
             } else {
                 startBtn.show();
                 stopBtn.hide();
@@ -315,6 +372,21 @@ $(document).ready(function() {
             stopBtn.hide();
             liveDisplay.hide();
         }
+    }
+
+    function updateLiveTimerDisplay(taskId) {
+        const task = tasks.find(t => t.id === taskId);
+        if (!task || !task.isTracking || !task.trackingStartTime) return;
+
+        const elapsedSeconds = Math.floor((Date.now() - task.trackingStartTime) / 1000);
+        const minutes = Math.floor(elapsedSeconds / 60);
+        const seconds = elapsedSeconds % 60;
+
+        const timeDisplay = minutes > 0 ?
+            `${minutes}m ${seconds}s` :
+            `${seconds}s`;
+
+        $('#taskLiveTimerDisplay').text(`🔴 Recording (${timeDisplay})`);
     }
 
     function startTimerFromModal() {
@@ -427,15 +499,35 @@ $(document).ready(function() {
         // Add task
         $('#addTaskBtn').on('click', () => openTaskModal());
 
-        // Modal close
+        // Modal close - improved event handling
         $('#taskModal').on('click', function(e) {
+            // Only close if clicking directly on the modal backdrop
             if (e.target === this) {
                 closeTaskModal();
             }
         });
 
+        // Prevent modal close when clicking on modal content or timer buttons
+        $('#taskModal .modal-content, #taskModal form, #taskModal .time-tracker, #taskModal .taskTimerControls, #taskModal button, #taskModal input, #taskModal textarea').on('click', function(e) {
+            e.stopPropagation();
+        });
+
         // Modal close button
         $('#taskModal .btn-close, #taskModal button[data-bs-dismiss="modal"]').on('click', closeTaskModal);
+
+        // ESC key to close modal
+        $(document).on('keydown', function(e) {
+            if (e.key === 'Escape' && $('#taskModal').is(':visible')) {
+                closeTaskModal();
+            }
+        });
+
+        // Prevent modal close when pressing Enter in form fields
+        $('#taskForm input, #taskForm textarea').on('keydown', function(e) {
+            if (e.key === 'Enter' && !$(this).is('textarea')) {
+                e.preventDefault();
+            }
+        });
 
         // Category filtering
         $('#categoryFilter').on('change', function() {
@@ -444,8 +536,62 @@ $(document).ready(function() {
             refreshCurrentView(filteredTasks);
         });
 
-        // Dark mode toggle
-        $('#darkModeToggle').on('click', toggleDarkMode);
+        // Mobile menu toggle
+        $('#mobileMenuToggle').on('click', function() {
+            const mobileMenu = $('#mobileMenu');
+            const isVisible = !mobileMenu.hasClass('hidden');
+
+            if (isVisible) {
+                mobileMenu.addClass('hidden');
+                $(this).find('i').removeClass('fa-times').addClass('fa-bars');
+            } else {
+                mobileMenu.removeClass('hidden');
+                $(this).find('i').removeClass('fa-bars').addClass('fa-times');
+            }
+        });
+
+        // Mobile add task button
+        $('#mobileAddTaskBtn').on('click', function() {
+            openTaskModal();
+            // Hide mobile menu after clicking
+            $('#mobileMenu').addClass('hidden');
+            $('#mobileMenuToggle').find('i').removeClass('fa-times').addClass('fa-bars');
+        });
+
+        // Language switcher toggle
+        $('#languageToggle').on('click', function(e) {
+            e.stopPropagation();
+            const languageMenu = $('#languageMenu');
+            const isVisible = !languageMenu.hasClass('hidden');
+
+            // Hide mobile menu if open
+            $('#mobileMenu').addClass('hidden');
+            $('#mobileMenuToggle').find('i').removeClass('fa-times').addClass('fa-bars');
+
+            if (isVisible) {
+                languageMenu.addClass('hidden');
+                $(this).removeClass('text-gray-200').addClass('hover:text-gray-200');
+            } else {
+                languageMenu.removeClass('hidden');
+                $(this).addClass('text-gray-200').removeClass('hover:text-gray-200');
+            }
+        });
+
+        // Language selection
+        $('#langEn, #langEs, #langFr').on('click', function() {
+            const lang = $(this).attr('id').replace('lang', '').toLowerCase();
+            switchLanguage(lang);
+            $('#languageMenu').addClass('hidden');
+            $('#languageToggle').removeClass('text-gray-200').addClass('hover:text-gray-200');
+        });
+
+        // Close language menu when clicking outside
+        $(document).on('click', function(e) {
+            if (!$(e.target).closest('#languageToggle, #languageMenu').length) {
+                $('#languageMenu').addClass('hidden');
+                $('#languageToggle').removeClass('text-gray-200').addClass('hover:text-gray-200');
+            }
+        });
 
         // Form submission
         $('#taskForm').on('submit', function(e) {
@@ -825,6 +971,118 @@ $(document).ready(function() {
         showToast(`Dark mode ${darkMode ? 'enabled' : 'disabled'}`, 'info');
     }
 
+    function switchLanguage(lang) {
+        // Store current language preference
+        localStorage.setItem('selectedLanguage', lang);
+
+        // Language translations (can be expanded)
+        const translations = {
+            en: {
+                title: 'To-Do Portfolio',
+                addTask: 'Add Task',
+                activeTimers: 'active',
+                filterCategory: 'Filter by Category',
+                allCategories: 'All Categories',
+                noTasks: 'No tasks yet. Click "Add Task" to get started!',
+                editTask: 'Edit Task',
+                addEditTask: 'Add/Edit Task',
+                titleLabel: 'Title *',
+                descriptionLabel: 'Description',
+                categoryLabel: 'Category',
+                colorLabel: 'Color',
+                deadlineLabel: 'Deadline',
+                estimatedHoursLabel: 'Estimated Hours',
+                timeSpentLabel: 'Time Spent',
+                saveTask: 'Save Task',
+                cancel: 'Cancel',
+                delete: 'Delete',
+                edit: 'Edit',
+                start: 'Start',
+                stop: 'Stop',
+                reset: 'Reset',
+                recording: 'Recording',
+                hours: 'hours',
+                minutes: 'minutes',
+                success: 'Success',
+                error: 'Error',
+                warning: 'Warning'
+            },
+            es: {
+                title: 'Portafolio de Tareas',
+                addTask: 'Agregar Tarea',
+                activeTimers: 'activos',
+                filterCategory: 'Filtrar por Categoría',
+                allCategories: 'Todas las Categorías',
+                noTasks: 'No hay tareas aún. Haz clic en "Agregar Tarea" para comenzar!',
+                editTask: 'Editar Tarea',
+                addEditTask: 'Agregar/Editar Tarea',
+                titleLabel: 'Título *',
+                descriptionLabel: 'Descripción',
+                categoryLabel: 'Categoría',
+                colorLabel: 'Color',
+                deadlineLabel: 'Fecha Límite',
+                estimatedHoursLabel: 'Horas Estimadas',
+                timeSpentLabel: 'Tiempo Empleado',
+                saveTask: 'Guardar Tarea',
+                cancel: 'Cancelar',
+                delete: 'Eliminar',
+                edit: 'Editar',
+                start: 'Iniciar',
+                stop: 'Detener',
+                reset: 'Reiniciar',
+                recording: 'Grabando',
+                hours: 'horas',
+                minutes: 'minutos',
+                success: 'Éxito',
+                error: 'Error',
+                warning: 'Advertencia'
+            },
+            fr: {
+                title: 'Portefeuille de Tâches',
+                addTask: 'Ajouter une Tâche',
+                activeTimers: 'actifs',
+                filterCategory: 'Filtrer par Catégorie',
+                allCategories: 'Toutes les Catégories',
+                noTasks: 'Aucune tâche pour le moment. Cliquez sur "Ajouter une Tâche" pour commencer!',
+                editTask: 'Modifier la Tâche',
+                addEditTask: 'Ajouter/Modifier la Tâche',
+                titleLabel: 'Titre *',
+                descriptionLabel: 'Description',
+                categoryLabel: 'Catégorie',
+                colorLabel: 'Couleur',
+                deadlineLabel: 'Date Limite',
+                estimatedHoursLabel: 'Heures Estimées',
+                timeSpentLabel: 'Temps Passé',
+                saveTask: 'Sauvegarder la Tâche',
+                cancel: 'Annuler',
+                delete: 'Supprimer',
+                edit: 'Modifier',
+                start: 'Démarrer',
+                stop: 'Arrêter',
+                reset: 'Réinitialiser',
+                recording: 'Enregistrement',
+                hours: 'heures',
+                minutes: 'minutes',
+                success: 'Succès',
+                error: 'Erreur',
+                warning: 'Avertissement'
+            }
+        };
+
+        const langData = translations[lang] || translations.en;
+
+        // Update UI text (basic implementation - can be expanded)
+        document.title = langData.title;
+        $('.brand-title, h1').text(langData.title);
+        $('#addTaskBtn span').text(langData.addTask);
+        $('#mobileAddTaskBtn span').text(langData.addTask);
+
+        // Store current language for persistence
+        showToast(`Language switched to ${langData.title}`, 'success');
+
+        console.log(`🌐 Language switched to: ${lang}`);
+    }
+
     function applyDarkMode() {
         if (darkMode) {
             $('html').addClass('dark');
@@ -903,34 +1161,71 @@ $(document).ready(function() {
                     {
                         data: 'timeSpent',
                         title: 'Time',
-                        width: '100px',
+                        width: '120px',
                         orderable: false,
                         render: function(data, type, row) {
                             if (type === 'display') {
                                 const timeSpent = data || 0;
                                 const isTracking = row.isTracking || false;
-                                const formattedTime = timeSpent < 60 ? `${Math.round(timeSpent)}m` : `${Math.floor(timeSpent / 60)}h ${Math.round(timeSpent % 60)}m`;
+                                const totalMinutes = Math.floor(timeSpent / 60);
+                                const totalSeconds = timeSpent % 60;
 
-                                return `
-                                    <div class="flex flex-col items-center space-y-1">
-                                        <div class="flex items-center text-sm ${isTracking ? 'text-green-600 dark:text-green-400' : 'text-gray-600 dark:text-gray-400'}">
-                                            <i class="fas fa-stopwatch mr-1"></i>
-                                            <span>${formattedTime}</span>
-                                            ${isTracking ? '<span class="text-red-500 ml-1">🔴</span>' : ''}
+                                // Format total time
+                                const totalTimeDisplay = totalMinutes > 0 ?
+                                    `${totalMinutes}h ${totalSeconds}m` :
+                                    `${totalSeconds}m`;
+
+                                // Show live time if currently tracking
+                                if (isTracking && row.trackingStartTime) {
+                                    const elapsedSeconds = Math.floor((Date.now() - row.trackingStartTime) / 1000);
+                                    const elapsedMinutes = Math.floor(elapsedSeconds / 60);
+                                    const elapsedSecs = elapsedSeconds % 60;
+                                    const liveTimeDisplay = elapsedMinutes > 0 ?
+                                        `${elapsedMinutes}m ${elapsedSecs}s` :
+                                        `${elapsedSecs}s`;
+
+                                    return `
+                                        <div class="flex flex-col items-center space-y-1">
+                                            <div class="flex items-center text-sm ${isTracking ? 'text-green-600 dark:text-green-400' : 'text-gray-600 dark:text-gray-400'}">
+                                                <i class="fas fa-stopwatch mr-1"></i>
+                                                <span>${totalTimeDisplay} (+${liveTimeDisplay})</span>
+                                                ${isTracking ? '<span class="text-red-500 ml-1">🔴</span>' : ''}
+                                            </div>
+                                            <div class="flex space-x-1">
+                                                <button class="timer-btn start ${isTracking ? 'stop' : 'start'} text-xs px-1 py-0.5"
+                                                        onclick="event.stopPropagation(); toggleTimer('${row.id}')">
+                                                    ${isTracking ? '<i class="fas fa-stop text-xs"></i>' : '<i class="fas fa-play text-xs"></i>'}
+                                                </button>
+                                                <button class="timer-btn reset text-xs px-1 py-0.5"
+                                                        onclick="event.stopPropagation(); resetTimer('${row.id}')"
+                                                        title="Reset timer">
+                                                    <i class="fas fa-undo text-xs"></i>
+                                                </button>
+                                            </div>
                                         </div>
-                                        <div class="flex space-x-1">
-                                            <button class="timer-btn start ${isTracking ? 'stop' : 'start'} text-xs px-1 py-0.5"
-                                                    onclick="toggleTimer('${row.id}')">
-                                                ${isTracking ? '<i class="fas fa-stop text-xs"></i>' : '<i class="fas fa-play text-xs"></i>'}
-                                            </button>
-                                            <button class="timer-btn reset text-xs px-1 py-0.5"
-                                                    onclick="resetTimer('${row.id}')"
-                                                    title="Reset timer">
-                                                <i class="fas fa-undo text-xs"></i>
-                                            </button>
+                                    `;
+                                } else {
+                                    return `
+                                        <div class="flex flex-col items-center space-y-1">
+                                            <div class="flex items-center text-sm ${isTracking ? 'text-green-600 dark:text-green-400' : 'text-gray-600 dark:text-gray-400'}">
+                                                <i class="fas fa-stopwatch mr-1"></i>
+                                                <span>${totalTimeDisplay}</span>
+                                                ${isTracking ? '<span class="text-red-500 ml-1">🔴</span>' : ''}
+                                            </div>
+                                            <div class="flex space-x-1">
+                                                <button class="timer-btn start ${isTracking ? 'stop' : 'start'} text-xs px-1 py-0.5"
+                                                        onclick="event.stopPropagation(); toggleTimer('${row.id}')">
+                                                    ${isTracking ? '<i class="fas fa-stop text-xs"></i>' : '<i class="fas fa-play text-xs"></i>'}
+                                                </button>
+                                                <button class="timer-btn reset text-xs px-1 py-0.5"
+                                                        onclick="event.stopPropagation(); resetTimer('${row.id}')"
+                                                        title="Reset timer">
+                                                    <i class="fas fa-undo text-xs"></i>
+                                                </button>
+                                            </div>
                                         </div>
-                                    </div>
-                                `;
+                                    `;
+                                }
                             }
                             return data || 0;
                         }
@@ -1015,11 +1310,42 @@ $(document).ready(function() {
         });
     };
 
-    // Make timer functions globally accessible
+    // Make all functions globally accessible for HTML onclick attributes
     window.toggleTimer = toggleTimer;
     window.resetTimer = resetTimer;
     window.startTimer = startTimer;
     window.stopTimer = stopTimer;
+
+    // Modal functions
+    window.openTaskModal = openTaskModal;
+    window.closeTaskModal = closeTaskModal;
+    window.updateModalTimerControls = updateModalTimerControls;
+    window.startTimerFromModal = startTimerFromModal;
+    window.stopTimerFromModal = stopTimerFromModal;
+    window.resetTimerFromModal = resetTimerFromModal;
+
+    // Utility functions
+    window.showToast = showToast;
+    window.hideToast = hideToast;
+
+    // Language and UI functions
+    window.switchLanguage = switchLanguage;
+    window.toggleDarkMode = toggleDarkMode;
+
+    // Make sure these are accessible
+    if (typeof startTimerFromModal === 'undefined') {
+        console.error('startTimerFromModal is not defined');
+    }
+    if (typeof stopTimerFromModal === 'undefined') {
+        console.error('stopTimerFromModal is not defined');
+    }
+    if (typeof resetTimerFromModal === 'undefined') {
+        console.error('resetTimerFromModal is not defined');
+    }
+
+    console.log('✅ All modal timer functions are now globally accessible');
+
+    // Debug function
     window.getTimerStatus = function() {
         console.log('=== DETAILED TIMER STATUS DEBUG ===');
         const now = Date.now();
@@ -1060,8 +1386,15 @@ $(document).ready(function() {
         refreshCurrentView();
         populateCategoryFilter();
         applyDarkMode();
+
+        // Load saved language preference
+        const savedLanguage = localStorage.getItem('selectedLanguage') || 'en';
+        if (savedLanguage !== 'en') {
+            switchLanguage(savedLanguage);
+        }
+
         startBackgroundTimer();
-        console.log('✅ Enhanced Application with Tailwind initialized successfully');
+        console.log('✅ Enhanced Application with Mobile Menu & Language Switcher initialized successfully');
     }
 
     // Start the application

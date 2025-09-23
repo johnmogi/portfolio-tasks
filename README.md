@@ -67,7 +67,8 @@ assets/
 - **📈 Session Management**: Track time per day and session with full history
 - **👁️ Visual Indicators**: Real-time status with colored indicators and live updates
 - **📚 Historical Data**: Complete time log history per task with debugging tools
-- **🎮 Universal Controls**: Time recording available in all views (Cards, List, Table)
+- **⏰ Multi-Timer Support**: Run multiple timers simultaneously across different tasks
+- **🔢 Active Timer Counter**: Header shows count of currently active timers
 - **🔧 Debug Tools**: Use `getTimerStatus()` in browser console for troubleshooting
 - **✅ Accurate Tracking**: Fixed timer calculation bugs for precise minute tracking
 
