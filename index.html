@@ -184,6 +184,18 @@
                         <div class="flex items-center px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg">
                             <i class="fas fa-stopwatch text-gray-500 dark:text-gray-400 mr-2"></i>
                             <span id="taskTimeSpentDisplay" class="text-gray-900 dark:text-gray-100">0h 0m</span>
+                            <span id="taskLiveTimerDisplay" class="text-green-500 dark:text-green-400 ml-2 hidden">🔴 Recording</span>
+                            <div class="ml-auto flex space-x-2" id="taskTimerControls">
+                                <button id="modalStartTimer" class="timer-btn start bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm" onclick="startTimerFromModal()">
+                                    <i class="fas fa-play"></i> Start
+                                </button>
+                                <button id="modalStopTimer" class="timer-btn stop bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm hidden" onclick="stopTimerFromModal()">
+                                    <i class="fas fa-stop"></i> Stop
+                                </button>
+                                <button id="modalResetTimer" class="timer-btn reset bg-yellow-500 hover:bg-yellow-600 text-gray-900 px-3 py-1 rounded text-sm" onclick="resetTimerFromModal()">
+                                    <i class="fas fa-undo"></i> Reset
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -203,6 +215,20 @@
     <!-- Toast Container -->
     <div class="fixed top-4 right-4 z-50 space-y-2"></div>
 
+    <!-- Footer -->
+    <footer class="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 mt-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div class="text-center">
+                <p class="text-gray-600 dark:text-gray-400 text-sm">
+                    © <span id="currentYear"></span> <a href="https://johnmogi.com" target="_blank" class="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 transition-colors duration-200">johnmogi.com</a>. All rights reserved.
+                </p>
+                <p class="text-gray-500 dark:text-gray-500 text-xs mt-2">
+                    Built with ❤️ using Tailwind CSS and modern web technologies
+                </p>
+            </div>
+        </div>
+    </footer>
+
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
 
@@ -214,5 +240,10 @@
 
     <!-- App JS -->
     <script src="assets/app-enhanced.js"></script>
+
+    <!-- Set current year -->
+    <script>
+        document.getElementById('currentYear').textContent = new Date().getFullYear();
+    </script>
 </body>
 </html>

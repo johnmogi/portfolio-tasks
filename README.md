@@ -17,6 +17,7 @@ A modern, ultra-responsive task management application built with **Tailwind CSS
 - **📊 Smart Category Filtering**: Real-time filtering with auto-populated dropdown
 - **🎯 Cards as Default**: Beautiful card layout by default
 - **🌙 Advanced Dark Mode**: Complete theming with smooth transitions
+- **🔗 Professional Footer**: Copyright notice linking to johnmogi.com
 
 ### ⚡ **Time Recording System**
 - **Background Tracking**: Timer runs even when modal is closed
@@ -57,12 +58,18 @@ assets/
 - **Better Typography**: Improved readability and hierarchy
 - **Component-Based**: Consistent design system
 
-### ⏰ **Advanced Time Tracking**
-- **Background Processing**: Timer continues even when view is closed
-- **Detailed Logging**: Every 15 minutes automatically logged
-- **Session Management**: Track time per day and session
-- **Visual Indicators**: Real-time status with colored indicators
-- **Historical Data**: Complete time log history per task
+### ⏱️ **Advanced Time Tracking**
+- **🔴 Red Dot Indicator**: Active timers show red dot on all task cards
+- **⏱️ Live Second Counter**: Real-time seconds display while tracking (45s, 1m 30s, etc.)
+- **📊 Background Processing**: Timer continues even when modal is closed
+- **📝 Modal Integration**: Live timer display in expanded task view
+- **🎯 Detailed Logging**: Every 15 minutes automatically logged with timestamps
+- **📈 Session Management**: Track time per day and session with full history
+- **👁️ Visual Indicators**: Real-time status with colored indicators and live updates
+- **📚 Historical Data**: Complete time log history per task with debugging tools
+- **🎮 Universal Controls**: Time recording available in all views (Cards, List, Table)
+- **🔧 Debug Tools**: Use `getTimerStatus()` in browser console for troubleshooting
+- **✅ Accurate Tracking**: Fixed timer calculation bugs for precise minute tracking
 
 ### 🎨 **Superior Design**
 - **Utility-First**: Tailwind CSS for rapid, consistent styling
@@ -97,11 +104,20 @@ npx serve .
 4. Works seamlessly with all view modes
 
 ### ⏱️ **Advanced Time Recording**
-1. **Start Timer**: Click play button on any task
-2. **Background Tracking**: Timer continues even when modal is closed
-3. **Automatic Logging**: Every 15 minutes logged automatically
-4. **Session History**: View complete time logs per task
-5. **Daily Tracking**: Monitor time spent per day
+1. **🔴 Red Dot Indicator**: When timer starts, see red dot (🔴) on task cards instantly
+2. **⏱️ Live Second Counter**: Watch seconds tick up in real-time (45s, 1m 30s, 2m 15s)
+3. **Start Timer**: Click play button (▶️) - timer starts immediately with live updates
+4. **📝 Modal View**: Open task to see live timer display in expanded view
+5. **Background Tracking**: Timer continues even when modal is closed
+6. **🎯 Auto-Logging**: Every 15 minutes automatically logged to history
+7. **📊 Session History**: View complete time logs with timestamps in browser console
+8. **📅 Daily Tracking**: Monitor time spent per day with detailed breakdowns
+9. **🎮 All Views**: Time controls work in Cards, List, and Table views
+10. **👁️ Visual Feedback**: Red dot (🔴) shows active tracking across all views
+11. **⏸️ Stop Timer**: Click stop button to pause and log exact time spent
+12. **🔄 Easy Reset**: Clear all time with reset button (↻)
+13. **🔧 Debug Tools**: Run `getTimerStatus()` in console for detailed timer info
+14. **✅ Accurate Timing**: Fixed calculation bugs for precise minute tracking
 
 ### 🌙 **Dark Mode**
 1. Click the "Dark Mode" button in the navbar

@@ -947,6 +947,3 @@ function renderListView() {
     window.saveTask = saveTask;
     window.deleteTask = deleteTask;
     window.refreshTable = refreshTable;
-    window.refreshCurrentView = refreshCurrentView;
-});
-
