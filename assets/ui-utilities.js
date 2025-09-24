@@ -2,6 +2,17 @@
 // UI UTILITIES MODULE
 // ==========================================
 
+// Helper function for time formatting
+function formatTimeSpent(minutes) {
+    if (!minutes) return '0m';
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    if (hours > 0) {
+        return `${hours}h ${mins}m`;
+    }
+    return `${mins}m`;
+}
+
 function showToast(message, type = 'success') {
     const toastContainer = $('.fixed.top-4.right-4.z-50.space-y-2');
     const toastId = 'toast-' + Date.now();
@@ -102,6 +113,14 @@ function openTaskModal(taskId = null) {
 }
 
 function closeTaskModal() {
+    // Stop any running timer for this task
+    if (currentTaskId) {
+        const task = tasks.find(t => t.id === currentTaskId);
+        if (task && task.isTracking) {
+            stopTimer(currentTaskId);
+        }
+    }
+
     $('#taskModal').addClass('hidden');
     currentTaskId = null;
 }

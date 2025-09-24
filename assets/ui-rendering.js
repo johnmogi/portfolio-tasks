@@ -112,7 +112,7 @@ function createTaskCard(task) {
     }
 
     return `
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-4">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 p-6 mb-4">
             <div class="flex items-start justify-between">
                 <div class="flex items-center">
                     <input class="task-status w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500 mr-3"
