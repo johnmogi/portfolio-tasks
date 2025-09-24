@@ -85,7 +85,7 @@ function populateCategoryFilter() {
     const filterContainer = $('#categoryFilter');
     const categories = getUniqueCategories();
 
-    let filterHtml = '<option value="all">All Categories</option>';
+    let filterHtml = `<option value="" data-translate="allCategories">${getTranslation('allCategories')}</option>`;
     categories.forEach(category => {
         filterHtml += `<option value="${category}">${category}</option>`;
     });

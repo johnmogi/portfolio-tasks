@@ -50,7 +50,7 @@ function renderCardView(tasksToShow = null) {
     container.empty();
 
     if (displayTasks.length === 0) {
-        container.html('<div class="text-center py-8 text-gray-500 dark:text-gray-400"><i class="fas fa-tasks text-4xl mb-4"></i><p>No tasks yet. Create your first task!</p></div>');
+        container.html(`<div class="text-center py-8 text-gray-500 dark:text-gray-400"><i class="fas fa-tasks text-4xl mb-4"></i><p>${getTranslation('noTasks')}</p></div>`);
         return;
     }
 
@@ -66,7 +66,7 @@ function renderListView(tasksToShow = null) {
     container.empty();
 
     if (displayTasks.length === 0) {
-        container.html('<div class="text-center py-8 text-gray-500 dark:text-gray-400"><i class="fas fa-list text-4xl mb-4"></i><p>No tasks yet. Create your first task!</p></div>');
+        container.html(`<div class="text-center py-8 text-gray-500 dark:text-gray-400"><i class="fas fa-list text-4xl mb-4"></i><p>${getTranslation('noTasks')}</p></div>`);
         return;
     }
 

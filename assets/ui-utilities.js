@@ -57,7 +57,7 @@ function applyDarkMode() {
 
     // Update toggle button
     const icon = darkMode ? 'fa-sun' : 'fa-moon';
-    const text = darkMode ? 'Light Mode' : 'Dark Mode';
+    const text = darkMode ? getTranslation('lightMode') : getTranslation('darkMode');
     $('#darkModeToggle').html(`<i class="fas ${icon}"></i><span class="ml-2">${text}</span>`);
 }
 
@@ -71,6 +71,13 @@ function switchLanguage(lang) {
     // Refresh views to show new language
     refreshCurrentView();
     populateCategoryFilter();
+
+    // Close language menu
+    toggleLanguageMenu();
+}
+
+function toggleLanguageMenu() {
+    $('#languageMenu').toggleClass('hidden');
 }
 
 function updateUIText() {
@@ -79,6 +86,14 @@ function updateUIText() {
         const key = $(this).data('translate');
         if (translations[selectedLanguage][key]) {
             $(this).text(translations[selectedLanguage][key]);
+        }
+    });
+
+    // Update placeholder text
+    $('[data-translate-placeholder]').each(function() {
+        const key = $(this).data('translate-placeholder');
+        if (translations[selectedLanguage][key]) {
+            $(this).attr('placeholder', translations[selectedLanguage][key]);
         }
     });
 }

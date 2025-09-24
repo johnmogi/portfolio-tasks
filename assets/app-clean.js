@@ -69,11 +69,11 @@ $(document).ready(function() {
         if (currentTaskId) {
             // Update existing task
             updateTask(currentTaskId, taskData);
-            showToast('Task updated successfully!', 'success');
+            showToast(getTranslation('taskUpdated'), 'success');
         } else {
             // Add new task
             addTask(taskData);
-            showToast('Task added successfully!', 'success');
+            showToast(getTranslation('taskAdded'), 'success');
         }
 
         closeTaskModal();
@@ -100,20 +100,22 @@ $(document).ready(function() {
         e.stopPropagation();
         const taskId = $(this).data('task-id');
 
-        if (confirm('Are you sure you want to delete this task?')) {
+        if (confirm(getTranslation('confirmDelete'))) {
             deleteTask(taskId);
-            showToast('Task deleted successfully!', 'success');
+            showToast(getTranslation('taskDeleted'), 'success');
         }
     });
 
     // Dark mode toggle
     $('#darkModeToggle').on('click', toggleDarkMode);
 
+    // Language menu toggle
+    $('#languageToggle').on('click', toggleLanguageMenu);
+
     // Language switcher
-    $('#languageSelect').on('change', function() {
-        const lang = $(this).val();
-        switchLanguage(lang);
-    });
+    $('#langEn').on('click', () => switchLanguage('en'));
+    $('#langEs').on('click', () => switchLanguage('es'));
+    $('#langFr').on('click', () => switchLanguage('fr'));
 
     // Make all functions globally accessible for HTML onclick attributes
     window.toggleTimer = toggleTimer;
@@ -136,6 +138,7 @@ $(document).ready(function() {
     // Language and UI functions
     window.switchLanguage = switchLanguage;
     window.toggleDarkMode = toggleDarkMode;
+    window.toggleLanguageMenu = toggleLanguageMenu;
 
     // Debug function
     window.getTimerStatus = getTimerStatus;
