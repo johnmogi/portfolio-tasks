@@ -491,10 +491,8 @@ $(document).ready(function() {
     // ==========================================
 
     function setupEventHandlers() {
-        // View switching
-        $('#tableViewBtn').on('click', () => switchView('table'));
-        $('#cardViewBtn').on('click', () => switchView('card'));
-        $('#listViewBtn').on('click', () => switchView('list'));
+        // Extended view toggle
+        $('#extendedViewBtn').on('click', () => switchView('extended'));
 
         // Add task
         $('#addTaskBtn').on('click', () => openTaskModal());
@@ -578,7 +576,7 @@ $(document).ready(function() {
         });
 
         // Language selection
-        $('#langEn, #langEs, #langFr').on('click', function() {
+        $('#langEn, #langEs, #langFr, #langHe').on('click', function() {
             const lang = $(this).attr('id').replace('lang', '').toLowerCase();
             switchLanguage(lang);
             $('#languageMenu').addClass('hidden');
@@ -651,8 +649,8 @@ $(document).ready(function() {
         const displayTasks = tasksToShow || tasks;
 
         switch (currentView) {
-            case 'card':
-                renderCardView(displayTasks);
+            case 'extended':
+                renderExtendedView(displayTasks);
                 break;
             case 'list':
                 renderListView(displayTasks);
@@ -660,14 +658,66 @@ $(document).ready(function() {
             case 'table':
                 refreshTable(displayTasks);
                 break;
+            case 'card':
+                renderCardView(displayTasks);
+                break;
         }
     }
 
-    // ==========================================
-    // RENDERING FUNCTIONS
-    // ==========================================
+    // Update button states
+    $('.view-toggle').removeClass('active');
+    $(`#${viewType}ViewBtn`).addClass('active');
 
-    function formatDate(dateString) {
+    // Hide all view containers
+    $('.view-container').addClass('hidden');
+
+    // Show selected view container
+    $(`#tasks${viewType.charAt(0).toUpperCase() + viewType.slice(1)}Container`).removeClass('hidden');
+
+    currentView = viewType;
+    refreshCurrentView();
+}
+
+function refreshCurrentView(tasksToShow = null) {
+    const displayTasks = tasksToShow || tasks;
+
+    switch (currentView) {
+        case 'extended':
+            renderExtendedView(displayTasks);
+            break;
+        case 'list':
+            renderListView(displayTasks);
+            break;
+        case 'table':
+            refreshTable(displayTasks);
+            break;
+        case 'card':
+            renderCardView(displayTasks);
+            break;
+    }
+}
+
+function renderExtendedView(tasksToShow = null) {
+        const displayTasks = tasksToShow || tasks;
+        const container = $('#tasksExtendedGrid');
+        container.empty();
+
+        if (displayTasks.length === 0) {
+            container.html(`
+                <div class="col-span-full text-center py-12">
+                    <div class="text-gray-400 dark:text-gray-500 mb-4">
+                        <i class="fas fa-tasks text-6xl"></i>
+                    </div>
+                    <p class="text-lg text-gray-500 dark:text-gray-400">No tasks yet. Click "Add Task" to get started!</p>
+                </div>
+            `);
+            return;
+        }
+
+        displayTasks.forEach(task => {
+            container.append(createExtendedTaskCard(task));
+        });
+function formatDate(dateString) {
         if (!dateString) return 'No deadline';
         const options = { year: 'numeric', month: 'short', day: 'numeric' };
         return new Date(dateString).toLocaleDateString(undefined, options);
@@ -690,9 +740,9 @@ $(document).ready(function() {
         </span>`;
     }
 
-    function renderCardView(tasksToShow = null) {
+    function renderExtendedView(tasksToShow = null) {
         const displayTasks = tasksToShow || tasks;
-        const container = $('#tasksCardGrid');
+        const container = $('#tasksExtendedGrid');
         container.empty();
 
         if (displayTasks.length === 0) {
@@ -708,86 +758,136 @@ $(document).ready(function() {
         }
 
         displayTasks.forEach(task => {
-            container.append(createTaskCard(task));
+            container.append(createExtendedTaskCard(task));
         });
     }
 
-    function renderListView(tasksToShow = null) {
-        const displayTasks = tasksToShow || tasks;
-        const container = $('#tasksList');
-        container.empty();
-
-        if (displayTasks.length === 0) {
-            container.html(`
-                <div class="text-center py-12">
-                    <div class="text-gray-400 dark:text-gray-500 mb-4">
-                        <i class="fas fa-tasks text-4xl"></i>
-                    </div>
-                    <p class="text-gray-500 dark:text-gray-400">No tasks yet. Click "Add Task" to get started!</p>
-                </div>
-            `);
-            return;
-        }
-
-        displayTasks.forEach(task => {
-            container.append(createTaskListItem(task));
-        });
-    }
-
-    function createTaskCard(task) {
+    function createExtendedTaskCard(task) {
         const timeSpent = task.timeSpent || 0;
         const isTracking = task.isTracking || false;
         const overdue = task.deadline && new Date(task.deadline) < new Date() && task.status === 'open';
+        const timeLogs = task.timeLogs || [];
+        const todayLogs = timeLogs.filter(log => log.date === new Date().toISOString().split('T')[0]);
+        const totalTodayTime = todayLogs.reduce((total, log) => total + log.minutes, 0);
 
         return `
             <div class="task-card group ${task.status === 'done' ? 'completed' : ''} cursor-pointer hover:shadow-lg transition-all duration-200" data-id="${task.id}" onclick="openTaskModal('${task.id}')">
-                <div class="space-y-4">
-                    <div>
-                        <h3 class="task-card-title">${task.title || 'Untitled Task'}</h3>
-                        <p class="task-card-description text-sm">${task.description || 'No description'}</p>
+                <div class="space-y-6">
+                    <div class="border-b pb-4">
+                        <h3 class="task-card-title text-2xl font-bold mb-2">${task.title || 'Untitled Task'}</h3>
+                        <p class="task-card-description text-lg text-gray-600 dark:text-gray-300">${task.description || 'No description'}</p>
                     </div>
 
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center space-x-2">
-                            ${createCategoryBadge(task.category, task.color)}
-                            ${overdue ? '<span class="text-red-500 dark:text-red-400">⚠️ Overdue</span>' : ''}
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                            <h4 class="font-semibold text-sm text-gray-500 dark:text-gray-400 uppercase tracking-wide">Status</h4>
+                            <div class="flex items-center mt-2">
+                                <span class="px-3 py-1 rounded-full text-sm font-medium ${task.status === 'done' ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' : 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200'}">
+                                    ${task.status === 'done' ? 'Completed' : 'In Progress'}
+                                </span>
+                            </div>
                         </div>
-                        <span class="task-card-meta text-sm">${formatDate(task.deadline) || 'No deadline'}</span>
+
+                        <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                            <h4 class="font-semibold text-sm text-gray-500 dark:text-gray-400 uppercase tracking-wide">Category</h4>
+                            <div class="mt-2">
+                                ${createCategoryBadge(task.category, task.color)}
+                            </div>
+                        </div>
+
+                        <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                            <h4 class="font-semibold text-sm text-gray-500 dark:text-gray-400 uppercase tracking-wide">Deadline</h4>
+                            <div class="mt-2">
+                                <span class="text-lg font-medium ${overdue ? 'text-red-600 dark:text-red-400' : ''}">
+                                    ${formatDate(task.deadline) || 'No deadline'}
+                                    ${overdue ? '<span class="ml-2">⚠️</span>' : ''}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                            <h4 class="font-semibold text-sm text-gray-500 dark:text-gray-400 uppercase tracking-wide">Created</h4>
+                            <div class="mt-2">
+                                <span class="text-lg font-medium">
+                                    ${new Date(task.createdAt).toLocaleDateString()}
+                                </span>
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="time-tracker" ${timeSpent > 0 || isTracking ? '' : 'style="opacity: 0.7;"'}>
-                        <div class="time-display">
-                            <i class="fas fa-stopwatch"></i>
-                            <span>Time: ${formatTimeSpent(timeSpent)}</span>
-                            ${isTracking ? '<span class="text-red-500 ml-2">🔴</span>' : ''}
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+                            <h4 class="font-semibold text-lg text-blue-800 dark:text-blue-200 mb-3">Time Tracking</h4>
+                            <div class="space-y-3">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600 dark:text-gray-300">Total Time:</span>
+                                    <span class="font-semibold">${formatTimeSpent(timeSpent)}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600 dark:text-gray-300">Today:</span>
+                                    <span class="font-semibold">${formatTimeSpent(totalTodayTime)}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600 dark:text-gray-300">Sessions:</span>
+                                    <span class="font-semibold">${timeLogs.length}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600 dark:text-gray-300">Status:</span>
+                                    <span class="font-semibold ${isTracking ? 'text-green-600 dark:text-green-400' : 'text-gray-600 dark:text-gray-400'}">
+                                        ${isTracking ? '🔴 Active' : '⏸️ Paused'}
+                                    </span>
+                                </div>
+                            </div>
                         </div>
-                        <div class="flex space-x-1">
-                            <button class="timer-btn start ${isTracking ? 'stop' : 'start'}"
-                                    onclick="event.stopPropagation(); toggleTimer('${task.id}')">
-                                ${isTracking ? '<i class="fas fa-stop"></i>' : '<i class="fas fa-play"></i>'}
-                            </button>
-                            <button class="timer-btn reset"
-                                    onclick="event.stopPropagation(); resetTimer('${task.id}')"
-                                    title="Reset timer">
-                                <i class="fas fa-undo"></i>
-                            </button>
+
+                        <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                            <h4 class="font-semibold text-lg text-gray-800 dark:text-gray-200 mb-3">Quick Actions</h4>
+                            <div class="space-y-2">
+                                <button class="w-full bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center"
+                                        onclick="event.stopPropagation(); toggleTimer('${task.id}')">
+                                    <i class="fas ${isTracking ? 'fa-stop' : 'fa-play'} mr-2"></i>
+                                    ${isTracking ? 'Stop Timer' : 'Start Timer'}
+                                </button>
+                                <button class="w-full bg-yellow-500 hover:bg-yellow-600 text-gray-900 px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center"
+                                        onclick="event.stopPropagation(); resetTimer('${task.id}')">
+                                    <i class="fas fa-undo mr-2"></i>
+                                    Reset Timer
+                                </button>
+                                <button class="w-full bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center"
+                                        onclick="event.stopPropagation(); openTaskModal('${task.id}')">
+                                    <i class="fas fa-edit mr-2"></i>
+                                    Edit Task
+                                </button>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="task-card-actions" onclick="event.stopPropagation()">
-                        <button class="edit-task bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200" data-task-id="${task.id}">
-                            <i class="fas fa-edit mr-1"></i>Edit
+                    ${timeLogs.length > 0 ? `
+                    <div class="border-t pt-4">
+                        <h4 class="font-semibold text-lg text-gray-800 dark:text-gray-200 mb-3">Time Log History</h4>
+                        <div class="space-y-2 max-h-32 overflow-y-auto">
+                            ${timeLogs.slice(-5).map(log => `
+                                <div class="flex justify-between items-center text-sm bg-gray-50 dark:bg-gray-700 p-2 rounded">
+                                    <span>${new Date(log.timestamp).toLocaleTimeString()}</span>
+                                    <span>${formatTimeSpent(log.minutes || log.duration)} - ${log.type}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    ` : ''}
+
+                    <div class="flex justify-end space-x-3 pt-4 border-t">
+                        <button class="edit-task bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200" data-task-id="${task.id}">
+                            <i class="fas fa-edit mr-2"></i>Edit
                         </button>
-                        <button class="delete-task bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200" data-task-id="${task.id}">
-                            <i class="fas fa-trash mr-1"></i>Delete
+                        <button class="delete-task bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200" data-task-id="${task.id}">
+                            <i class="fas fa-trash mr-2"></i>Delete
                         </button>
                     </div>
                 </div>
             </div>
         `;
     }
-
-    function createTaskListItem(task) {
         const timeSpent = task.timeSpent || 0;
         const isTracking = task.isTracking || false;
 
@@ -1031,44 +1131,8 @@ $(document).ready(function() {
                 stop: 'Detener',
                 reset: 'Reiniciar',
                 recording: 'Grabando',
-                hours: 'horas',
-                minutes: 'minutos',
-                success: 'Éxito',
-                error: 'Error',
-                warning: 'Advertencia'
-            },
-            fr: {
-                title: 'Portefeuille de Tâches',
-                addTask: 'Ajouter une Tâche',
-                activeTimers: 'actifs',
-                filterCategory: 'Filtrer par Catégorie',
-                allCategories: 'Toutes les Catégories',
-                noTasks: 'Aucune tâche pour le moment. Cliquez sur "Ajouter une Tâche" pour commencer!',
-                editTask: 'Modifier la Tâche',
-                addEditTask: 'Ajouter/Modifier la Tâche',
-                titleLabel: 'Titre *',
-                descriptionLabel: 'Description',
-                categoryLabel: 'Catégorie',
-                colorLabel: 'Couleur',
-                deadlineLabel: 'Date Limite',
-                estimatedHoursLabel: 'Heures Estimées',
-                timeSpentLabel: 'Temps Passé',
-                saveTask: 'Sauvegarder la Tâche',
-                cancel: 'Annuler',
-                delete: 'Supprimer',
-                edit: 'Modifier',
-                start: 'Démarrer',
-                stop: 'Arrêter',
-                reset: 'Réinitialiser',
-                recording: 'Enregistrement',
-                hours: 'heures',
-                minutes: 'minutes',
-                success: 'Succès',
-                error: 'Erreur',
-                warning: 'Avertissement'
             }
         };
-
         const langData = translations[lang] || translations.en;
 
         // Update UI text (basic implementation - can be expanded)

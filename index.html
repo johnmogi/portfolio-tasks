@@ -105,14 +105,13 @@
                     <div class="text-xs text-gray-500 dark:text-gray-400">Spanish</div>
                 </div>
             </button>
-            <button id="langFr" class="w-full text-left px-3 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200 flex items-center space-x-3">
-                <span class="text-lg">🇫🇷</span>
+            <button id="langHe" class="w-full text-left px-3 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200 flex items-center space-x-3">
+                <span class="text-lg">🇮🇱</span>
                 <div>
-                    <div class="font-medium text-gray-900 dark:text-gray-100">Français</div>
-                    <div class="text-xs text-gray-500 dark:text-gray-400">French</div>
+                    <div class="font-medium text-gray-900 dark:text-gray-100">עברית</div>
+                    <div class="text-xs text-gray-500 dark:text-gray-400">Hebrew</div>
                 </div>
             </button>
-            <div class="border-t border-gray-200 dark:border-gray-700 my-2"></div>
             <div class="text-xs text-gray-500 dark:text-gray-400 px-3 py-1">
                 More languages coming soon...
             </div>
@@ -142,8 +141,8 @@
                         <button id="cardViewBtn" class="px-4 py-2 rounded-md font-medium bg-white dark:bg-gray-600 shadow-sm transition-colors duration-200">
                             <i class="fas fa-th-large mr-2"></i>Cards
                         </button>
-                        <button id="listViewBtn" class="px-4 py-2 rounded-md font-medium transition-colors duration-200">
-                            <i class="fas fa-list mr-2"></i>List
+                        <button id="extendedViewBtn" class="px-4 py-2 rounded-md font-medium transition-colors duration-200">
+                            <i class="fas fa-expand-arrows-alt mr-2"></i>Extended
                         </button>
                     </div>
                 </div>
@@ -178,12 +177,10 @@
             </div>
         </div>
 
-        <!-- List View Container -->
-        <div id="tasksListContainer" class="view-container hidden">
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-                <div class="divide-y divide-gray-200 dark:divide-gray-700" id="tasksList">
-                    <!-- Task list items will be populated here -->
-                </div>
+        <!-- Extended View Container -->
+        <div id="tasksExtendedContainer" class="view-container hidden">
+            <div class="grid grid-cols-1 gap-6" id="tasksExtendedGrid">
+                <!-- Extended task cards will be populated here -->
             </div>
         </div>
     </div>
